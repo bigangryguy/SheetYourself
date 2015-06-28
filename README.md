@@ -7,4 +7,4 @@ SheetYourself is a simple sprite sheet generator for Windows. Given a source fol
 
 _Code Versions_
 
-The Visual Studio 2010 solution is provided for users without Visual Studio 2012. Active development is done in the Visual Studio 2012 version, which targets .NET Framework 4.5. Updates to the 2012 version will be backported to the 2010 version when possible.
+The previous Visual Studio 2010 version has been eliminated and the Visual Studio 2012 version upgraded to Visual Studio 2013.
