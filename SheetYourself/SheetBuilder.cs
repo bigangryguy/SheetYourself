@@ -12,7 +12,7 @@ namespace SheetYourself
     /// <summary>
     /// Provides methods for compiling multiple source images into a single compact sprite sheet.
     /// </summary>
-    internal class SheetBuilder
+    public class SheetBuilder
     {
         #region Properties
 

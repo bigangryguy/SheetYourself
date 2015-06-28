@@ -7,35 +7,10 @@ using System.Drawing;
 namespace SheetYourself
 {
     /// <summary>
-    /// Stores basic information about an image being used to build a sprite sheet.
-    /// </summary>
-    internal class ImageInfo
-    {
-        #region Properties
-
-        /// <summary>
-        /// Gets or sets the image file name.
-        /// </summary>
-        public string FileName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the area of the image to use.
-        /// </summary>
-        public Rectangle SourceArea { get; set; }
-
-        /// <summary>
-        /// Gets or sets the position of the image on the sprite sheet.
-        /// </summary>
-        public Point Position { get; set; }
-
-        #endregion
-    }
-
-    /// <summary>
     /// Compares the area of two <see cref="SheetYourself.ImageInfo"/> instances to one another.
     /// If both images have equal area, then they are compared based on largest dimension.
     /// </summary>
-    internal class ImageInfoSizeComparer : IComparer<ImageInfo>
+    public class ImageInfoSizeComparer : IComparer<ImageInfo>
     {
         #region Public methods
 
