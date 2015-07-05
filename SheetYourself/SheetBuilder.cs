@@ -63,94 +63,6 @@ namespace SheetYourself
         #region Private methods
 
         /// <summary>
-        /// Gets an <see cref="ImageInfo"/> instance for the image contained in the specified file.
-        /// If the <paramref name="cropTransparency"/> parameter is true, then transparent pixels around
-        /// all sides of the image are not included when determining the source area of the image.
-        /// </summary>
-        /// <param name="filename">The file name of the image to use.</param>
-        /// <param name="cropTransparency">True if transparent pixels should be removed when determining
-        /// the source area of the image, or false if not.</param>
-        /// <returns>An <see cref="ImageInfo"/> instance for the provided image file.</returns>
-        private ImageInfo GetImageInfo(string filename, bool cropTransparency)
-        {
-            Bitmap bitmap = (Bitmap)Bitmap.FromFile(filename);
-            if (bitmap == null)
-            {
-                throw new ArgumentException(string.Format("Could not open image file '{0}'", filename), "filename");
-            }
-
-            int left = 0;
-            int right = bitmap.Width;
-            int top = 0;
-            int bottom = bitmap.Height;
-
-            if (cropTransparency)
-            {
-                // Finds the left-most column (X value) containing a non-transparent pixel
-                left = GetNonTransparentColumn(bitmap, true);
-
-                // Finds the right-most column (X value) containing a non-transparent pixel
-                right = GetNonTransparentColumn(bitmap, false);
-
-                // Finds the top-most row (Y value) containing a non-transparent pixel
-                top = GetNonTransparentRow(bitmap, true);
-
-                // Finds the bottom-most row (Y value) containing a non-transparent pixel
-                bottom = GetNonTransparentRow(bitmap, false);
-            }
-
-            int width = (right - left) + (2 * HorizontalPadding);
-            int height = (bottom - top) + (2 * VerticalPadding);
-
-            return new ImageInfo() { FileName = filename, SourceArea = new Rectangle(left, top, width, height) };
-        }
-
-        private int GetNonTransparentColumn(Bitmap bitmap, bool leftToRight)
-        {
-            int column = leftToRight ? 0 : bitmap.Width - 1;
-            int row = 0;
-            int increment = leftToRight ? 1 : -1;
-            int limit = leftToRight ? bitmap.Width : 0;
-            while ((column != limit) && bitmap.IsTransparent(column, row))
-            {
-                while ((row < bitmap.Height) && bitmap.IsTransparent(column, row))
-                {
-                    ++row;
-                }
-
-                if (row == bitmap.Height)
-                {
-                    row = 0;
-                    column += increment;
-                }
-            }
-            
-            return column;
-        }
-
-        private int GetNonTransparentRow(Bitmap bitmap, bool topToBottom)
-        {
-            int column = 0;
-            int row = topToBottom ? 0 : bitmap.Height - 1;
-            int increment = topToBottom ? 1 : -1;
-            int limit = topToBottom ? bitmap.Height : 0;
-            while ((row != limit) && bitmap.IsTransparent(column, row))
-            {
-                while ((column < bitmap.Width) && bitmap.IsTransparent(column, row))
-                {
-                    ++column;
-                }
-
-                if (column == bitmap.Width)
-                {
-                    column = 0;
-                    row += increment;
-                }
-            }
-            return row;
-        }
-
-        /// <summary>
         /// Creates a sprite sheet image file and XML definition file using the list of <see cref="ImageInfo"/>
         /// instances provided.
         /// </summary>
@@ -158,8 +70,8 @@ namespace SheetYourself
         /// <param name="sheetName">Name of the sprite sheet image file.</param>
         /// <param name="xmlName">Name of the sprite sheet XML definition file.</param>
         /// <param name="size">Size of the final output image used in the sprite sheet.</param>
-        /// <param name="images">List of <see cref="ImageInfo"/> instances to use when building the sprite sheet.</param>
-        private void WriteOutput(string outputName, string sheetName, string xmlName, Size size, List<ImageInfo> images)
+        /// <param name="sprites">List of <see cref="ImageInfo"/> instances to use when building the sprite sheet.</param>
+        private void WriteOutput(string outputName, string sheetName, string xmlName, Size size, List<Sprite> sprites)
         {
             Bitmap sheet = new Bitmap(size.Width, size.Height);
             Graphics graphics = Graphics.FromImage(sheet);
@@ -169,24 +81,22 @@ namespace SheetYourself
             writer.WriteStartElement("spritesheet");
             writer.WriteElementString("name", outputName);
             writer.WriteElementString("file", Path.GetFileName(sheetName));
-            writer.WriteElementString("count", images.Count.ToString());
+            writer.WriteElementString("count", sprites.Count.ToString());
             writer.WriteElementString("width", size.Width.ToString());
             writer.WriteElementString("height", size.Height.ToString());
             writer.WriteStartElement("sprites");
 
-            foreach (ImageInfo info in images)
+            foreach (Sprite sprite in sprites)
             {
-                Bitmap image = (Bitmap)Bitmap.FromFile(info.FileName);
-                graphics.DrawImage(image, new Rectangle(info.Position, info.SourceArea.Size), info.SourceArea, GraphicsUnit.Pixel);
-
-                string spriteName = Path.GetFileNameWithoutExtension(info.FileName).Replace(' ', '_');
+                Bitmap image = sprite.Image;
+                graphics.DrawImage(image, new Rectangle(sprite.SheetPosition.X, sprite.SheetPosition.Y, sprite.Width, sprite.Height));
 
                 writer.WriteStartElement("sprite");
-                writer.WriteElementString("name", spriteName);
-                writer.WriteElementString("x", info.Position.X.ToString());
-                writer.WriteElementString("y", info.Position.Y.ToString());
-                writer.WriteElementString("width", info.SourceArea.Width.ToString());
-                writer.WriteElementString("height", info.SourceArea.Height.ToString());
+                writer.WriteElementString("name", sprite.Name);
+                writer.WriteElementString("x", sprite.SheetPosition.X.ToString());
+                writer.WriteElementString("y", sprite.SheetPosition.Y.ToString());
+                writer.WriteElementString("width", sprite.Width.ToString());
+                writer.WriteElementString("height", sprite.Height.ToString());
                 writer.WriteEndElement();
             }
             writer.WriteEndElement();
@@ -253,20 +163,21 @@ namespace SheetYourself
             // Then create a list of images, sorted from smallest to largest.
             int totalArea = 0;
             int maxWidth = 0;
-            List<ImageInfo> images = new List<ImageInfo>();
+            List<Sprite> sprites = new List<Sprite>();
             foreach (FileInfo file in files)
             {
                 if (file.FullName != sheetName)
                 {
-                    ImageInfo info = GetImageInfo(file.FullName, cropTransparency);
-                    images.Add(info);
+                    Bitmap image = new Bitmap(file.FullName);
+                    Sprite sprite = new Sprite(Path.GetFileNameWithoutExtension(file.FullName).Replace(' ', '_'), image, HorizontalPadding, VerticalPadding, cropTransparency);
+                    sprites.Add(sprite);
 
-                    totalArea += info.SourceArea.Width * info.SourceArea.Height;
-                    maxWidth = (info.SourceArea.Width > maxWidth) ? info.SourceArea.Width : maxWidth;
+                    totalArea += sprite.Width * sprite.Height;
+                    maxWidth = (sprite.Width > maxWidth) ? sprite.Width : maxWidth;
                 }
             }
-            images.Sort(new ImageInfoSizeComparer());
-            images.Reverse();
+            sprites.Sort(new SpriteSizeComparer());
+            sprites.Reverse();
 
             // Target width of the output sprite sheet is the larger of either the square root
             // of the total area of all images, rounded up, or the width of the widest image.
@@ -279,23 +190,23 @@ namespace SheetYourself
             int nextX = 0;
             int nextY = 0;
             int maxHeightInRow = 0;
-            for (int i = 0; i < images.Count; ++i)
+            for (int i = 0; i < sprites.Count; ++i)
             {
                 // If the next image being added is wider than the remaining allowed
                 // width of the current row of images, start a new row
-                if (remainingWidth - images[i].SourceArea.Width <= 0)
+                if (remainingWidth - sprites[i].Width <= 0)
                 {
                     remainingWidth = targetWidth;
                     nextX = 0;
                     nextY += maxHeightInRow;
                     maxHeightInRow = 0;
                 }
-                images[i].Position = new Point(nextX, nextY);
-                remainingWidth -= images[i].SourceArea.Width;
-                nextX += images[i].SourceArea.Width;
-                if (images[i].SourceArea.Height > maxHeightInRow)
+                sprites[i].SheetPosition = new Point(nextX, nextY);
+                remainingWidth -= sprites[i].Width;
+                nextX += sprites[i].Width;
+                if (sprites[i].Height > maxHeightInRow)
                 {
-                    maxHeightInRow = images[i].SourceArea.Height;
+                    maxHeightInRow = sprites[i].Height;
                 }
             }
             int targetHeight = nextY + maxHeightInRow;
@@ -304,7 +215,7 @@ namespace SheetYourself
                 targetHeight = MathHelper.LeastPower2GreaterThanX(targetHeight);
             }
             Size size = new Size(targetWidth, targetHeight);
-            WriteOutput(outputName, sheetName, xmlName, size, images);
+            WriteOutput(outputName, sheetName, xmlName, size, sprites);
         }
 
         #endregion

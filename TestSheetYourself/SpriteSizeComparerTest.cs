@@ -6,14 +6,14 @@ using SheetYourself;
 namespace TestSheetYourself
 {
     [TestClass]
-    public class ImageInfoSizeComparerTest
+    public class SpriteSizeComparerTest
     {
         [TestMethod]
         public void XAreaLessThanYArea()
         {
-            ImageInfo x = new ImageInfo() { SourceArea = new Rectangle(0, 0, 10, 20) };
-            ImageInfo y = new ImageInfo() { SourceArea = new Rectangle(0, 0, 20, 30) };
-            ImageInfoSizeComparer comparer = new ImageInfoSizeComparer();
+            Sprite x = new Sprite("X", new Bitmap(10, 20), 0, false);
+            Sprite y = new Sprite("Y", new Bitmap(20, 30), 0, false);
+            SpriteSizeComparer comparer = new SpriteSizeComparer();
             int expected = -1;
             int actual = comparer.Compare(x, y);
             Assert.AreEqual(expected, actual);
@@ -22,9 +22,9 @@ namespace TestSheetYourself
         [TestMethod]
         public void XAreaGreaterThanYArea()
         {
-            ImageInfo x = new ImageInfo() { SourceArea = new Rectangle(0, 0, 20, 30) };
-            ImageInfo y = new ImageInfo() { SourceArea = new Rectangle(0, 0, 10, 20) };
-            ImageInfoSizeComparer comparer = new ImageInfoSizeComparer();
+            Sprite x = new Sprite("X", new Bitmap(20, 30), 0, false);
+            Sprite y = new Sprite("Y", new Bitmap(10, 20), 0, false);
+            SpriteSizeComparer comparer = new SpriteSizeComparer();
             int expected = 1;
             int actual = comparer.Compare(x, y);
             Assert.AreEqual(expected, actual);
@@ -33,9 +33,9 @@ namespace TestSheetYourself
         [TestMethod]
         public void XAreaEqualToYAreaAndXLongestDimensionLessThanY()
         {
-            ImageInfo x = new ImageInfo() { SourceArea = new Rectangle(0, 0, 15, 20) };
-            ImageInfo y = new ImageInfo() { SourceArea = new Rectangle(0, 0, 10, 30) };
-            ImageInfoSizeComparer comparer = new ImageInfoSizeComparer();
+            Sprite x = new Sprite("X", new Bitmap(15, 20), 0, false);
+            Sprite y = new Sprite("Y", new Bitmap(10, 30), 0, false);
+            SpriteSizeComparer comparer = new SpriteSizeComparer();
             int expected = -1;
             int actual = comparer.Compare(x, y);
             Assert.AreEqual(expected, actual);
@@ -44,9 +44,9 @@ namespace TestSheetYourself
         [TestMethod]
         public void XAreaEqualToYAreaAndXLongestDimensionGreaterThanY()
         {
-            ImageInfo x = new ImageInfo() { SourceArea = new Rectangle(0, 0, 10, 30) };
-            ImageInfo y = new ImageInfo() { SourceArea = new Rectangle(0, 0, 15, 20) };
-            ImageInfoSizeComparer comparer = new ImageInfoSizeComparer();
+            Sprite x = new Sprite("X", new Bitmap(10, 30), 0, false);
+            Sprite y = new Sprite("Y", new Bitmap(15, 20), 0, false);
+            SpriteSizeComparer comparer = new SpriteSizeComparer();
             int expected = 1;
             int actual = comparer.Compare(x, y);
             Assert.AreEqual(expected, actual);
@@ -55,9 +55,9 @@ namespace TestSheetYourself
         [TestMethod]
         public void XAreaEqualToYAreaAndXLongestDimensionEqualToY()
         {
-            ImageInfo x = new ImageInfo() { SourceArea = new Rectangle(0, 0, 10, 30) };
-            ImageInfo y = new ImageInfo() { SourceArea = new Rectangle(0, 0, 10, 30) };
-            ImageInfoSizeComparer comparer = new ImageInfoSizeComparer();
+            Sprite x = new Sprite("X", new Bitmap(10, 20), 0, false);
+            Sprite y = new Sprite("Y", new Bitmap(10, 20), 0, false);
+            SpriteSizeComparer comparer = new SpriteSizeComparer();
             int expected = 0;
             int actual = comparer.Compare(x, y);
             Assert.AreEqual(expected, actual);
