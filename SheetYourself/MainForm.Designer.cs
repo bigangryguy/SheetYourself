@@ -40,6 +40,7 @@
             this.uxHPaddingLabel = new System.Windows.Forms.Label();
             this.uxVPaddingLabel = new System.Windows.Forms.Label();
             this.uxVPadding = new System.Windows.Forms.NumericUpDown();
+            this.uxRoundUpPower2 = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.uxHPadding)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.uxVPadding)).BeginInit();
             this.SuspendLayout();
@@ -107,9 +108,9 @@
             this.uxCropTransparency.CheckState = System.Windows.Forms.CheckState.Checked;
             this.uxCropTransparency.Location = new System.Drawing.Point(290, 59);
             this.uxCropTransparency.Name = "uxCropTransparency";
-            this.uxCropTransparency.Size = new System.Drawing.Size(116, 17);
+            this.uxCropTransparency.Size = new System.Drawing.Size(112, 17);
             this.uxCropTransparency.TabIndex = 0;
-            this.uxCropTransparency.Text = "Crop Transparency";
+            this.uxCropTransparency.Text = "Crop transparency";
             this.uxCropTransparency.UseVisualStyleBackColor = true;
             // 
             // uxHPadding
@@ -164,11 +165,24 @@
             0,
             0});
             // 
+            // uxRoundUpPower2
+            // 
+            this.uxRoundUpPower2.AutoSize = true;
+            this.uxRoundUpPower2.Checked = true;
+            this.uxRoundUpPower2.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.uxRoundUpPower2.Location = new System.Drawing.Point(290, 85);
+            this.uxRoundUpPower2.Name = "uxRoundUpPower2";
+            this.uxRoundUpPower2.Size = new System.Drawing.Size(159, 17);
+            this.uxRoundUpPower2.TabIndex = 10;
+            this.uxRoundUpPower2.Text = "Round up to power of 2 size";
+            this.uxRoundUpPower2.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(456, 145);
+            this.Controls.Add(this.uxRoundUpPower2);
             this.Controls.Add(this.uxVPadding);
             this.Controls.Add(this.uxVPaddingLabel);
             this.Controls.Add(this.uxHPaddingLabel);
@@ -205,6 +219,7 @@
         private System.Windows.Forms.Label uxHPaddingLabel;
         private System.Windows.Forms.Label uxVPaddingLabel;
         private System.Windows.Forms.NumericUpDown uxVPadding;
+        private System.Windows.Forms.CheckBox uxRoundUpPower2;
 
     }
 }

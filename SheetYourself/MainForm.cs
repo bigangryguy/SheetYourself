@@ -58,7 +58,7 @@ namespace SheetYourself
             }
 
             SheetBuilder builder = new SheetBuilder((int)uxHPadding.Value, (int)uxVPadding.Value);
-            builder.BuildSheet(uxFolderName.Text, uxOutputName.Text, uxCropTransparency.Checked);
+            builder.BuildSheet(uxFolderName.Text, uxOutputName.Text, uxCropTransparency.Checked, uxRoundUpPower2.Checked);
         }
 
         private void uxFolderName_TextChanged(object sender, EventArgs e)

@@ -6,6 +6,7 @@ using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Xml;
+using System.Threading.Tasks;
 
 namespace SheetYourself
 {
@@ -72,107 +73,81 @@ namespace SheetYourself
         /// <returns>An <see cref="ImageInfo"/> instance for the provided image file.</returns>
         private ImageInfo GetImageInfo(string filename, bool cropTransparency)
         {
-            Bitmap image = (Bitmap)Bitmap.FromFile(filename);
-            if (image == null)
+            Bitmap bitmap = (Bitmap)Bitmap.FromFile(filename);
+            if (bitmap == null)
             {
                 throw new ArgumentException(string.Format("Could not open image file '{0}'", filename), "filename");
             }
 
-            // Lambda method to simplify the process of finding non-transparent pixels below
-            Func<int, int, bool> isTransparent = (px, py) =>
-                {
-                    return (px < image.Width) && (py < image.Height) && (image.GetPixel(px, py).A == 0);
-                };
-
-            int x = 0;
-            int y = 0;
-            int width = image.Width + (2 * HorizontalPadding);
-            int height = image.Height + (2 * VerticalPadding);
+            int left = 0;
+            int right = bitmap.Width;
+            int top = 0;
+            int bottom = bitmap.Height;
 
             if (cropTransparency)
             {
                 // Finds the left-most column (X value) containing a non-transparent pixel
-                #region Find left opaque pixel
-                int column = 0;
-                int row = 0;
-                while ((column < image.Width) && isTransparent(column, row))
-                {
-                    while ((row < image.Height) && isTransparent(column, row))
-                    {
-                        ++row;
-                    }
-
-                    if (row == image.Height)
-                    {
-                        row = 0;
-                        ++column;
-                    }
-                }
-                x = column;
-                #endregion
+                left = GetNonTransparentColumn(bitmap, true);
 
                 // Finds the right-most column (X value) containing a non-transparent pixel
-                #region Find right opaque pixel
-                column = image.Width - 1;
-                row = 0;
-                while ((column > x) && isTransparent(column, row))
-                {
-                    while ((row < image.Height) && isTransparent(column, row))
-                    {
-                        ++row;
-                    }
-
-                    if (row == image.Height)
-                    {
-                        row = 0;
-                        --column;
-                    }
-                }
-                width = column - x + 1 + (2 * HorizontalPadding);
-                #endregion
+                right = GetNonTransparentColumn(bitmap, false);
 
                 // Finds the top-most row (Y value) containing a non-transparent pixel
-                #region Find top opaque pixel
-                column = 0;
-                row = 0;
-                while ((row < image.Height) && isTransparent(column, row))
-                {
-                    while ((column < image.Width) && isTransparent(column, row))
-                    {
-                        ++column;
-                    }
-
-                    if (column == image.Width)
-                    {
-                        column = 0;
-                        ++row;
-                    }
-                }
-                y = row;
-                #endregion
+                top = GetNonTransparentRow(bitmap, true);
 
                 // Finds the bottom-most row (Y value) containing a non-transparent pixel
-                #region Find bottom opaque pixel
-                column = 0;
-                row = image.Height - 1;
-                while ((row > y) && isTransparent(column, row))
-                {
-                    while ((column < image.Width) && isTransparent(column, row))
-                    {
-                        ++column;
-                    }
-
-                    if (column == image.Width)
-                    {
-                        column = 0;
-                        --row;
-                    }
-                }
-                height = row - y + 1 + (2 * VerticalPadding);
-                #endregion
+                bottom = GetNonTransparentRow(bitmap, false);
             }
 
-            return new ImageInfo() { FileName = filename, SourceArea = new Rectangle(x, y, width, height) };
+            int width = (right - left) + (2 * HorizontalPadding);
+            int height = (bottom - top) + (2 * VerticalPadding);
+
+            return new ImageInfo() { FileName = filename, SourceArea = new Rectangle(left, top, width, height) };
+        }
+
+        private int GetNonTransparentColumn(Bitmap bitmap, bool leftToRight)
+        {
+            int column = leftToRight ? 0 : bitmap.Width - 1;
+            int row = 0;
+            int increment = leftToRight ? 1 : -1;
+            int limit = leftToRight ? bitmap.Width : 0;
+            while ((column != limit) && bitmap.IsTransparent(column, row))
+            {
+                while ((row < bitmap.Height) && bitmap.IsTransparent(column, row))
+                {
+                    ++row;
+                }
+
+                if (row == bitmap.Height)
+                {
+                    row = 0;
+                    column += increment;
+                }
+            }
+            
+            return column;
+        }
+
+        private int GetNonTransparentRow(Bitmap bitmap, bool topToBottom)
+        {
+            int column = 0;
+            int row = topToBottom ? 0 : bitmap.Height - 1;
+            int increment = topToBottom ? 1 : -1;
+            int limit = topToBottom ? bitmap.Height : 0;
+            while ((row != limit) && bitmap.IsTransparent(column, row))
+            {
+                while ((column < bitmap.Width) && bitmap.IsTransparent(column, row))
+                {
+                    ++column;
+                }
+
+                if (column == bitmap.Width)
+                {
+                    column = 0;
+                    row += increment;
+                }
+            }
+            return row;
         }
 
         /// <summary>
@@ -239,7 +214,7 @@ namespace SheetYourself
         /// <param name="outputName">Name to use for the sprite sheet output image file and XML definition file.</param>
         /// <param name="cropTransparency">True if transparent pixels should be removed when determining
         /// the source area of the image, or false if not.</param>
-        public void BuildSheet(string sourceFolder, string outputName, bool cropTransparency)
+        public void BuildSheet(string sourceFolder, string outputName, bool cropTransparency, bool roundUpPower2Size)
         {
             if (!Directory.Exists(sourceFolder))
             {
@@ -281,15 +256,14 @@ namespace SheetYourself
             List<ImageInfo> images = new List<ImageInfo>();
             foreach (FileInfo file in files)
             {
-                if (file.FullName == sheetName)
+                if (file.FullName != sheetName)
                 {
-                    continue;
-                }
-                ImageInfo info = GetImageInfo(file.FullName, cropTransparency);
-                images.Add(info);
+                    ImageInfo info = GetImageInfo(file.FullName, cropTransparency);
+                    images.Add(info);
 
-                totalArea += info.SourceArea.Width * info.SourceArea.Height;
-                maxWidth = (info.SourceArea.Width > maxWidth) ? info.SourceArea.Width : maxWidth;
+                    totalArea += info.SourceArea.Width * info.SourceArea.Height;
+                    maxWidth = (info.SourceArea.Width > maxWidth) ? info.SourceArea.Width : maxWidth;
+                }
             }
             images.Sort(new ImageInfoSizeComparer());
             images.Reverse();
@@ -297,10 +271,14 @@ namespace SheetYourself
             // Target width of the output sprite sheet is the larger of either the square root
             // of the total area of all images, rounded up, or the width of the widest image.
             int targetWidth = Math.Max((int)Math.Ceiling(Math.Sqrt(totalArea)), maxWidth);
+            if (roundUpPower2Size)
+            {
+                targetWidth = MathHelper.LeastPower2GreaterThanX(targetWidth);
+            }
             int remainingWidth = targetWidth;
             int nextX = 0;
             int nextY = 0;
-            int maxHeight = 0;
+            int maxHeightInRow = 0;
             for (int i = 0; i < images.Count; ++i)
             {
                 // If the next image being added is wider than the remaining allowed
@@ -309,18 +287,23 @@ namespace SheetYourself
                 {
                     remainingWidth = targetWidth;
                     nextX = 0;
-                    nextY += maxHeight;
-                    maxHeight = 0;
+                    nextY += maxHeightInRow;
+                    maxHeightInRow = 0;
                 }
                 images[i].Position = new Point(nextX, nextY);
                 remainingWidth -= images[i].SourceArea.Width;
                 nextX += images[i].SourceArea.Width;
-                if (images[i].SourceArea.Height > maxHeight)
+                if (images[i].SourceArea.Height > maxHeightInRow)
                 {
-                    maxHeight = images[i].SourceArea.Height;
+                    maxHeightInRow = images[i].SourceArea.Height;
                 }
             }
-            Size size = new Size(targetWidth, nextY + maxHeight);
+            int targetHeight = nextY + maxHeightInRow;
+            if (roundUpPower2Size)
+            {
+                targetHeight = MathHelper.LeastPower2GreaterThanX(targetHeight);
+            }
+            Size size = new Size(targetWidth, targetHeight);
             WriteOutput(outputName, sheetName, xmlName, size, images);
         }
 

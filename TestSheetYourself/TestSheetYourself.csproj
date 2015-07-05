@@ -55,6 +55,7 @@
     <Compile Include="ImageInfoTest.cs" />
     <Compile Include="ImageInfoSizeComparerTest.cs" />
     <Compile Include="SheetBuilderTest.cs" />
+    <Compile Include="MathHelperTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SheetYourself\SheetYourself.csproj">
